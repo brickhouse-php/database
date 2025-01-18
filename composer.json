@@ -21,6 +21,7 @@
     "require": {
         "php": "^8.4",
         "ext-pdo": "*",
+        "brickhouse/core": "dev-main",
         "nesbot/carbon": "^3.8.2"
     },
     "autoload": {
