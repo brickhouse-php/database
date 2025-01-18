@@ -1,0 +1,44 @@
+{
+    "name": "brickhouse/database",
+    "description": "Object Relational Mapper (ORM) package for Brickhouse",
+    "license": "MIT",
+    "keywords": ["framework", "brickhouse", "mvc", "orm", "database"],
+    "homepage": "https://github.com/brickhouse-php/brickhouse",
+    "support": {
+        "issues": "https://github.com/brickhouse-php/brickhouse/issues",
+        "source": "https://github.com/brickhouse-php/brickhouse"
+    },
+    "minimum-stability": "stable",
+    "prefer-stable": true,
+    "authors": [
+        {
+            "name": "Max T. Kristiansen",
+            "email": "me@maxtrier.dk",
+            "role": "Author",
+            "homepage": "https://maxtrier.dk"
+        }
+    ],
+    "require": {
+        "php": "^8.4",
+        "ext-pdo": "*",
+        "nesbot/carbon": "^3.8.2"
+    },
+    "autoload": {
+        "psr-4": {
+            "Brickhouse\\Database\\": "src"
+        },
+        "classmap": [
+            "src/"
+        ],
+        "files": [
+            "src/helpers.php"
+        ]
+    },
+    "extra": {
+        "brickhouse": {
+            "extensions": [
+                "\\Brickhouse\\Database\\Extension"
+            ]
+        }
+    }
+}
