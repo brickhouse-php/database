@@ -2,6 +2,8 @@
 
 namespace Brickhouse\Database;
 
+use Brickhouse\Log\Log;
+
 abstract class DatabaseConnection implements Queryable
 {
     /**
@@ -286,7 +288,11 @@ abstract class DatabaseConnection implements Queryable
 
         try {
             $callback();
-        } catch (\Throwable) {
+        } catch (\Throwable $e) {
+            Log::error("Failed to commit transaction: {message}", [
+                'message' => $e->getMessage()
+            ]);
+
             $this->rollback();
         }
 

@@ -116,7 +116,11 @@ trait CompilesSchema
     {
         ['vacuum' => $vacuum] = $command->parameters;
 
-        $commands = ["DELETE FROM sqlite_master WHERE type IN ('table', 'index', 'trigger')"];
+        $commands = [
+            "PRAGMA writable_schema = 1",
+            "DELETE FROM sqlite_master WHERE type IN ('table', 'index', 'trigger')",
+            "PRAGMA writable_schema = 0",
+        ];
 
         if ($vacuum) {
             $commands[] = "VACUUM";
