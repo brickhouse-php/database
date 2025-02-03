@@ -1,17 +1,18 @@
 <?php
 
-namespace Brickhouse\Database;
+namespace Brickhouse\Database\Transposer;
 
-use Brickhouse\Database\Builder\ModelQueryBuilder;
-use Brickhouse\Database\Naming\SnakeCaseNamingStrategy;
-use Brickhouse\Database\Relations\HasRelation;
+use Brickhouse\Database\ConnectionManager;
+use Brickhouse\Database\Transposer\ModelQueryBuilder;
+use Brickhouse\Database\Transposer\Naming\SnakeCaseNamingStrategy;
+use Brickhouse\Database\Transposer\Relations\HasRelation;
 use Brickhouse\Reflection\ReflectedType;
 use Brickhouse\Support\Collection;
 
 /**
- * @phpstan-require-implements \Brickhouse\Database\Model
+ * @phpstan-require-implements \Brickhouse\Database\Transposer\Model
  */
-trait IsModel
+trait DatabaseModel
 {
     /**
      * Gets the ID of the model.
@@ -122,10 +123,18 @@ trait IsModel
     /**
      * @inheritDoc
      */
+    public function inspect(): void
+    {
+        throw new \Exception("Not implemented.");
+    }
+
+    /**
+     * @inheritDoc
+     */
     public function fill(array $properties): static
     {
-        $mappable = self::mappable();
-        $relations = self::relations();
+        $mappable = self::mappableAttributes();
+        $relations = self::modelRelations();
 
         foreach ($mappable as $property) {
             if (! array_key_exists($property, $properties)) {
@@ -204,61 +213,12 @@ trait IsModel
     /**
      * @inheritDoc
      */
-    public static function defaults(): array
-    {
-        return [];
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public static function mappable(): array
-    {
-        $properties = [self::key()];
-
-        foreach (new ReflectedType(self::class)->getProperties() as $property) {
-            if (!$property->public() || $property->readonly() || $property->abstract() || $property->static() || $property->hooked()) {
-                continue;
-            }
-
-            $properties[] = $property->name;
-        }
-
-        return $properties;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public static function relations(): array
-    {
-        $relations = [];
-
-        foreach (new ReflectedType(self::class)->getProperties() as $property) {
-            if (!$property->public() || $property->readonly() || $property->abstract() || $property->static()) {
-                continue;
-            }
-
-            $relation = $property->attribute(HasRelation::class);
-            if (!$relation) {
-                continue;
-            }
-
-            $relations[$property->name] = $relation->create();
-        }
-
-        return $relations;
-    }
-
-    /**
-     * @inheritDoc
-     */
     public function getProperties(): array
     {
         $values = [];
 
-        $properties = self::mappable();
-        $relations = self::relations();
+        $properties = self::mappableAttributes();
+        $relations = self::modelRelations();
 
         foreach ($properties as $property) {
             if (!isset($this->$property)) {
@@ -276,5 +236,54 @@ trait IsModel
         }
 
         return $values;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public static function attributeDefaults(): array
+    {
+        return [];
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public static function mappableAttributes(): array
+    {
+        $properties = [self::key()];
+
+        foreach (new ReflectedType(self::class)->getProperties() as $property) {
+            if (!$property->public() || $property->readonly() || $property->abstract() || $property->static() || $property->hooked()) {
+                continue;
+            }
+
+            $properties[] = $property->name;
+        }
+
+        return $properties;
+    }
+
+    /**
+     * @inheritDoc
+     */
+    public static function modelRelations(): array
+    {
+        $relations = [];
+
+        foreach (new ReflectedType(self::class)->getProperties() as $property) {
+            if (!$property->public() || $property->readonly() || $property->abstract() || $property->static()) {
+                continue;
+            }
+
+            $relation = $property->attribute(HasRelation::class, inherit: true);
+            if (!$relation) {
+                continue;
+            }
+
+            $relations[$property->name] = $relation->create();
+        }
+
+        return $relations;
     }
 }

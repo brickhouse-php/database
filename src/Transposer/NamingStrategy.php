@@ -1,6 +1,6 @@
 <?php
 
-namespace Brickhouse\Database;
+namespace Brickhouse\Database\Transposer;
 
 /**
  * @template TModel of Model

@@ -1,9 +1,9 @@
 <?php
 
-namespace Brickhouse\Database\Naming;
+namespace Brickhouse\Database\Transposer\Naming;
 
-use Brickhouse\Database\NamingStrategy;
-use Brickhouse\Database\Model;
+use Brickhouse\Database\Transposer\NamingStrategy;
+use Brickhouse\Database\Transposer\Model;
 use Brickhouse\Reflection\ReflectedType;
 use Brickhouse\Support\StringHelper;
 

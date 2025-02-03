@@ -1,6 +1,6 @@
 <?php
 
-namespace Brickhouse\Database\Exceptions;
+namespace Brickhouse\Database\Transposer\Exceptions;
 
 class InvalidRelationAttributeException extends RelationException
 {

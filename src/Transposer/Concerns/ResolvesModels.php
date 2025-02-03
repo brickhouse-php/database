@@ -1,13 +1,13 @@
 <?php
 
-namespace Brickhouse\Database\Builder\Concerns;
+namespace Brickhouse\Database\Transposer\Concerns;
 
-use Brickhouse\Database\Builder\ModelQueryBuilder;
-use Brickhouse\Database\Exceptions;
-use Brickhouse\Database\Model;
-use Brickhouse\Database\Relations\HasMany;
-use Brickhouse\Database\Relations\HasOne;
-use Brickhouse\Database\Relations\HasRelation;
+use Brickhouse\Database\Transposer\Exceptions;
+use Brickhouse\Database\Transposer\ModelQueryBuilder;
+use Brickhouse\Database\Transposer\Model;
+use Brickhouse\Database\Transposer\Relations\HasMany;
+use Brickhouse\Database\Transposer\Relations\HasOne;
+use Brickhouse\Database\Transposer\Relations\HasRelation;
 use Brickhouse\Reflection\ReflectedProperty;
 use Brickhouse\Reflection\ReflectedType;
 use Brickhouse\Support\Collection;

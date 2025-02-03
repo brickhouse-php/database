@@ -1,9 +1,9 @@
 <?php
 
-namespace Brickhouse\Database;
+namespace Brickhouse\Database\Transposer;
 
-use Brickhouse\Database\Builder\ModelQueryBuilder;
-use Brickhouse\Database\Relations\HasRelation;
+use Brickhouse\Database\Transposer\ModelQueryBuilder;
+use Brickhouse\Database\Transposer\Relations\HasRelation;
 use Brickhouse\Support\Collection;
 
 interface Model
@@ -88,6 +88,13 @@ interface Model
     public static function create(array $properties = []): self;
 
     /**
+     * Prints a string-representation of the model to STDOUT.
+     *
+     * @return void
+     */
+    public function inspect(): void;
+
+    /**
      * Fills the model with the given properties.
      *
      * @param array<string,mixed>   $properties
@@ -113,30 +120,30 @@ interface Model
     public function refresh(): self;
 
     /**
+     * Gets all the property values defined on the model.
+     *
+     * @return array<string,mixed>
+     */
+    public function getProperties(): array;
+
+    /**
      * Gets all the default values for the properties.
      *
      * @return array<string,mixed>
      */
-    public static function defaults(): array;
+    public static function attributeDefaults(): array;
 
     /**
      * Gets the names of all mappable properties on the model.
      *
      * @return array<int,string>
      */
-    public static function mappable(): array;
+    public static function mappableAttributes(): array;
 
     /**
      * Gets all the relations defined on the model.
      *
      * @return array<string,HasRelation<static>>
      */
-    public static function relations(): array;
-
-    /**
-     * Gets all the property values defined on the model.
-     *
-     * @return array<string,mixed>
-     */
-    public function getProperties(): array;
+    public static function modelRelations(): array;
 }

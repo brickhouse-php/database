@@ -4,6 +4,7 @@ namespace Brickhouse\Database;
 
 use Brickhouse\Core\Application;
 use Brickhouse\Database\Commands;
+use Brickhouse\Database\Transposer\ModelBuilder;
 
 class Extension extends \Brickhouse\Core\Extension
 {
@@ -12,9 +13,7 @@ class Extension extends \Brickhouse\Core\Extension
      */
     public string $name = "brickhouse/database";
 
-    public function __construct(private readonly Application $application)
-    {
-    }
+    public function __construct(private readonly Application $application) {}
 
     /**
      * Invoked before the application has started.

@@ -1,8 +1,8 @@
 <?php
 
-namespace Brickhouse\Database;
+namespace Brickhouse\Database\Transposer;
 
-use Brickhouse\Database\Relations\HasRelation;
+use Brickhouse\Database\Transposer\Relations\HasRelation;
 use Brickhouse\Reflection\ReflectedProperty;
 use Brickhouse\Reflection\ReflectedType;
 use Brickhouse\Support\Collection;
@@ -65,7 +65,7 @@ class ModelBuilder
     {
         $properties = $this->resolveModelProperties($reflector);
         $relations = $this->resolveModelRelations($reflector->name);
-        $defaults = $instance::defaults();
+        $defaults = $instance::attributeDefaults();
 
         foreach ($properties as $property) {
             if (!array_key_exists($property->name, $attributes)) {
@@ -164,7 +164,7 @@ class ModelBuilder
         $properties = [];
         $className = $reflector->name;
 
-        foreach ($className::mappable() as $propertyName) {
+        foreach ($className::mappableAttributes() as $propertyName) {
             $property = $reflector->getProperty($propertyName);
 
             if ($property) {
@@ -190,7 +190,7 @@ class ModelBuilder
             return $this->relations[$model];
         }
 
-        $relations = $this->relations[$model] = $model::relations();
+        $relations = $this->relations[$model] = $model::modelRelations();
 
         return $relations;
     }

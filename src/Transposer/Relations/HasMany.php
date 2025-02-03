@@ -1,8 +1,8 @@
 <?php
 
-namespace Brickhouse\Database\Relations;
+namespace Brickhouse\Database\Transposer\Relations;
 
-use Brickhouse\Database\Model;
+use Brickhouse\Database\Transposer\Model;
 
 /**
  * @template TModel of Model

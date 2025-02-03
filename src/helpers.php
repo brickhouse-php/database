@@ -10,6 +10,7 @@ if (! function_exists("migrations_path")) {
      */
     function migrations_path(?string ...$path): string
     {
+        /** @phpstan-ignore function.notFound */
         return resource_path("migrations", ...$path);
     }
 }

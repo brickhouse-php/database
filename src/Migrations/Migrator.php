@@ -8,7 +8,6 @@ use Brickhouse\Database\Events;
 use Brickhouse\Database\Schema\Blueprint;
 use Brickhouse\Database\Schema\Schema;
 use Carbon\Carbon;
-use Symfony\Component\Finder\Finder;
 
 final class Migrator
 {
@@ -139,18 +138,11 @@ final class Migrator
      */
     private function migrations(): array
     {
-        $finder = new Finder()
-            ->in(migrations_path())
-            ->files()
-            ->name('*.php')
-            ->ignoreVCS(false)
-            ->ignoreUnreadableDirs();
-
         $migrations = [];
 
-        foreach ($finder as $file) {
-            $migrationName = $file->getFilenameWithoutExtension();
-            $migration = require $file->getRealPath();
+        foreach (glob(migrations_path("*.php")) as $file) {
+            $migrationName = pathinfo($file, PATHINFO_FILENAME);
+            $migration = require $file;
 
             if (!$migration instanceof Migration) {
                 continue;

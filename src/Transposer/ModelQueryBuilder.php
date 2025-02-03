@@ -1,10 +1,11 @@
 <?php
 
-namespace Brickhouse\Database\Builder;
+namespace Brickhouse\Database\Transposer;
 
-use Brickhouse\Database\Builder\Concerns;
+use Brickhouse\Database\Builder\QueryBuilder;
 use Brickhouse\Database\DatabaseConnection;
-use Brickhouse\Database\Model;
+use Brickhouse\Database\Transposer\Concerns;
+use Brickhouse\Database\Transposer\Model;
 use Brickhouse\Support\Collection;
 
 /**
