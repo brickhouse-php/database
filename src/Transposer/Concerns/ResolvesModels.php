@@ -3,17 +3,21 @@
 namespace Brickhouse\Database\Transposer\Concerns;
 
 use Brickhouse\Database\Transposer\Exceptions;
+use Brickhouse\Database\Transposer\Exceptions\UnresolvableHasOneException;
 use Brickhouse\Database\Transposer\ModelQueryBuilder;
 use Brickhouse\Database\Transposer\Model;
+use Brickhouse\Database\Transposer\Relations\BelongsTo;
 use Brickhouse\Database\Transposer\Relations\HasMany;
 use Brickhouse\Database\Transposer\Relations\HasOne;
-use Brickhouse\Database\Transposer\Relations\HasRelation;
+use Brickhouse\Database\Transposer\Relations\Relation;
 use Brickhouse\Reflection\ReflectedProperty;
 use Brickhouse\Reflection\ReflectedType;
 use Brickhouse\Support\Collection;
 
 /**
  * @template TModel of Model
+ *
+ * @property-read   class-string<TModel>    $modelClass
  */
 trait ResolvesModels
 {
@@ -102,7 +106,7 @@ trait ResolvesModels
      */
     protected function resolveModelRelation(ReflectedProperty $property, Collection $rows): Collection
     {
-        // Resolve an instance of the `HasRelation` attribute.
+        // Resolve an instance of the `Relation` attribute.
         $relation = $this->resolvePropertyRelationAttribute($property);
 
         if ($relation instanceof HasOne) {
@@ -113,23 +117,27 @@ trait ResolvesModels
             return $this->resolveMultipleModelRelation($property, $relation, $rows);
         }
 
+        if ($relation instanceof BelongsTo) {
+            return $this->resolveReferencingModelRelation($property, $relation, $rows);
+        }
+
         throw new Exceptions\UnsupportedRelationException($this->modelClass, $property->name, $relation::class);
     }
 
     /**
-     * Attempts to get a `HasRelation` attribute from the given property.
+     * Attempts to get a `Relation` attribute from the given property.
      * If one isn't defined, but the property has a valid `Model` type, an appropriate `HasOne` relation is returned instead.
      *
      * @param ReflectedProperty $property   The property to retrieve the relation from.
      *
-     * @return HasRelation<Model>
+     * @return Relation<Model>
      *
      * @throws Exceptions\InvalidRelationAttributeException Thrown if no attribute is found and no valid type is given.
      * @throws Exceptions\InvalidRelationTypeException      Thrown if no attribute is found and the type isn't implementing the `Model`-class.
      */
-    protected function resolvePropertyRelationAttribute(ReflectedProperty $property): HasRelation
+    protected function resolvePropertyRelationAttribute(ReflectedProperty $property): Relation
     {
-        $relationAttribute = $property->attribute(HasRelation::class, inherit: true);
+        $relationAttribute = $property->attribute(Relation::class, inherit: true);
 
         if (!$relationAttribute) {
             $relationType = $property->type();
@@ -163,22 +171,34 @@ trait ResolvesModels
         $builder = new ModelQueryBuilder($relation->model, $this->connection);
         $this->withSubRelations($builder, $property->name);
 
-        $column = $relation->column ?? "{$property->name}_id";
-        $referencedColumn = $relation->referencedColumn ?? "id";
+        $foreignColumn = $relation->foreignColumn ?? $this->modelClass::naming()->foreignKey();
+        $keyColumn = $relation->keyColumn ?? $relation->model::key();
 
         $keys = [];
         foreach ($rows as $row) {
-            $keys[] = $row[$column];
+            $keys[] = $row[$keyColumn];
         }
 
         $models = $builder
-            ->whereIn($referencedColumn, $keys)
+            ->whereIn($foreignColumn, $keys)
             ->all()
-            ->keyBy($referencedColumn);
+            ->groupBy($foreignColumn);
 
         foreach ($rows->keys() as $idx) {
             $row = $rows[$idx];
-            $row[$property->name] = $models[$row[$column]];
+
+            $modelId = $row[$keyColumn];
+            $modelsForRow = $models[$modelId] ?? [];
+
+            if (count($modelsForRow) !== 1) {
+                throw new UnresolvableHasOneException(
+                    $this->modelClass,
+                    $property->name,
+                    Collection::wrap($modelsForRow)
+                );
+            }
+
+            $row[$property->name] = $modelsForRow[0];
 
             $rows[$idx] = $row;
         }
@@ -201,7 +221,7 @@ trait ResolvesModels
         $this->withSubRelations($builder, $property->name);
 
         $foreignColumn = $relation->foreignColumn ?? $this->modelClass::naming()->foreignKey();
-        $keyColumn = $relation->keyColumn ?? "id";
+        $keyColumn = $relation->keyColumn ?? $relation->model::key();
 
         $keys = [];
         foreach ($rows as $row) {
@@ -217,6 +237,45 @@ trait ResolvesModels
             $row = $rows[$idx];
             $row[$property->name] = $models[$row[$keyColumn]];
 
+            $rows[$idx] = $row;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * Resolve a `BelongsTo` relation on the given property.
+     *
+     * @param ReflectedProperty                     $property
+     * @param BelongsTo<TModel>                     $relation
+     * @param Collection<int,array<string,mixed>>   $rows
+     *
+     * @return Collection<int,array<string,mixed>>
+     */
+    protected function resolveReferencingModelRelation(ReflectedProperty $property, BelongsTo $relation, Collection $rows): Collection
+    {
+        $builder = new ModelQueryBuilder($relation->model, $this->connection);
+        $this->withSubRelations($builder, $property->name);
+
+        $keyColumn = $relation->keyColumn ?? $this->modelClass::key();
+
+        $keys = [];
+        foreach ($rows as $row) {
+            $keys[] = $row[$keyColumn];
+        }
+
+        $models = $builder
+            ->whereIn($keyColumn, $keys)
+            ->all()
+            ->groupBy($keyColumn);
+
+        foreach ($rows->keys() as $idx) {
+            $row = $rows[$idx];
+
+            $modelId = $row[$keyColumn];
+            $modelsForRow = $models[$modelId];
+
+            $row[$property->name] = $modelsForRow[0];
             $rows[$idx] = $row;
         }
 

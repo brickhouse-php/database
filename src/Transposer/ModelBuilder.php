@@ -2,7 +2,7 @@
 
 namespace Brickhouse\Database\Transposer;
 
-use Brickhouse\Database\Transposer\Relations\HasRelation;
+use Brickhouse\Database\Transposer\Relations\Relation;
 use Brickhouse\Reflection\ReflectedProperty;
 use Brickhouse\Reflection\ReflectedType;
 use Brickhouse\Support\Collection;
@@ -22,7 +22,7 @@ class ModelBuilder
     /**
      * Contains cached lists of relations on all created models.
      *
-     * @var array<class-string<TModel>,array<string,HasRelation<TModel>>>
+     * @var array<class-string<TModel>,array<string,Relation<TModel>>>
      */
     protected array $relations = [];
 
@@ -34,7 +34,7 @@ class ModelBuilder
      *
      * @return TModel
      */
-    public function create(string $model, array $attributes)
+    public function create(string $model, array $attributes): Model
     {
         try {
             $reflector = new ReflectedType($model);
@@ -48,7 +48,7 @@ class ModelBuilder
 
         $instance = $reflector->newInstanceWithoutConstructor();
 
-        $this->loadModelAttributes($reflector, $instance, $attributes);
+        $this->loadModelAttributes($instance, $attributes);
         $this->loadRelatedAttributes($reflector, $instance, $attributes);
 
         return $instance;
@@ -57,14 +57,12 @@ class ModelBuilder
     /**
      * Load all the attributes in `$attributes` into the model instance.
      *
-     * @param ReflectedType<TModel> $reflector
      * @param TModel                $instance
      * @param array<string,mixed>   $attributes     Properties to fill into the model on creation.
      */
-    protected function loadModelAttributes(ReflectedType $reflector, Model $instance, array $attributes): void
+    protected function loadModelAttributes(Model $instance, array $attributes): void
     {
-        $properties = $this->resolveModelProperties($reflector);
-        $relations = $this->resolveModelRelations($reflector->name);
+        $properties = $instance->getMappableAttributeProperties();
         $defaults = $instance::attributeDefaults();
 
         foreach ($properties as $property) {
@@ -84,7 +82,7 @@ class ModelBuilder
                 continue;
             }
 
-            if (in_array($property->name, array_keys($relations))) {
+            if ($instance->isModelRelation($property->name)) {
                 continue;
             }
 
@@ -96,7 +94,9 @@ class ModelBuilder
                 continue;
             }
 
+            // If the property doesn't exist on the model instance, set it as an auxiliary value.
             if (!property_exists($instance, $key)) {
+                $instance->addAuxiliaryAttribute($key, $value);
                 continue;
             }
 
@@ -113,7 +113,7 @@ class ModelBuilder
      */
     protected function loadRelatedAttributes(ReflectedType $reflector, Model $instance, array $attributes): void
     {
-        $relations = $this->resolveModelRelations($reflector->name);
+        $relations = $instance->getModelRelations();
 
         foreach (array_keys($relations) as $propertyName) {
             if (!array_key_exists($propertyName, $attributes)) {
@@ -146,52 +146,5 @@ class ModelBuilder
 
             $property->setValue($instance, $value);
         }
-    }
-
-    /**
-     * Get all the model properties on the given reflector.
-     *
-     * @param ReflectedType<TModel>     $reflector
-     *
-     * @return array<string,ReflectedProperty>
-     */
-    protected function resolveModelProperties(ReflectedType $reflector): array
-    {
-        if (isset($this->properties[$reflector->name])) {
-            return $this->properties[$reflector->name];
-        }
-
-        $properties = [];
-        $className = $reflector->name;
-
-        foreach ($className::mappableAttributes() as $propertyName) {
-            $property = $reflector->getProperty($propertyName);
-
-            if ($property) {
-                $properties[$propertyName] = $property;
-            }
-        }
-
-        $this->properties[$reflector->name] = $properties;
-
-        return $properties;
-    }
-
-    /**
-     * Get all the model relations on the given reflector.
-     *
-     * @param class-string<TModel>  $model
-     *
-     * @return array<string,HasRelation<TModel>>
-     */
-    protected function resolveModelRelations(string $model): array
-    {
-        if (isset($this->relations[$model])) {
-            return $this->relations[$model];
-        }
-
-        $relations = $this->relations[$model] = $model::modelRelations();
-
-        return $relations;
     }
 }

@@ -14,14 +14,16 @@ class HasOne extends HasRelation
 {
     /**
      * @param class-string<TModel>  $model
-     * @param null|string|null      $column
-     * @param null|string|null      $referencedColumn
+     * @param null|string           $foreignColumn
+     * @param null|string           $keyColumn
+     * @param bool                  $destroyDependent
      */
     public function __construct(
         string $model,
-        public readonly null|string $column = null,
-        public readonly null|string $referencedColumn = null
+        null|string $foreignColumn = null,
+        null|string $keyColumn = null,
+        public readonly bool $destroyDependent = true
     ) {
-        parent::__construct($model);
+        parent::__construct($model, $foreignColumn, $keyColumn);
     }
 }

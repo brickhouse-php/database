@@ -12,13 +12,13 @@ use Brickhouse\Support\StringHelper;
  *
  * @implements NamingStrategy<TModel>
  */
-readonly class SnakeCaseNamingStrategy implements NamingStrategy
+class SnakeCaseNamingStrategy implements NamingStrategy
 {
     /**
      * @param class-string<TModel>      $model  Class name of the model.
      */
     public function __construct(
-        public readonly string $model,
+        public string $model,
     ) {}
 
     public function key(): string

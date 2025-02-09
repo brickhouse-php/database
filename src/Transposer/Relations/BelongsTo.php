@@ -9,7 +9,8 @@ use Brickhouse\Database\Transposer\Model;
  *
  * @extends Relation<TModel>
  */
-abstract class HasRelation extends Relation
+#[\Attribute(flags: \Attribute::TARGET_PROPERTY)]
+class BelongsTo extends Relation
 {
     /**
      * @param class-string<TModel>  $model
@@ -34,7 +35,7 @@ abstract class HasRelation extends Relation
         }
 
         foreach (new $this->model()->getModelRelations() as $property => $relation) {
-            if (!$relation instanceof BelongsTo) {
+            if (!$relation instanceof HasRelation) {
                 continue;
             }
 
@@ -45,6 +46,6 @@ abstract class HasRelation extends Relation
             return $property;
         }
 
-        throw new \RuntimeException("Failed to determine matching BelongsTo relation on " . $model);
+        throw new \RuntimeException("Failed to determine matching HasRelation relation on " . $model);
     }
 }

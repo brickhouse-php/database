@@ -24,16 +24,30 @@
       "homepage": "https://maxtrier.dk"
     }
   ],
+  "scripts": {
+    "test": [
+      "@test:type",
+      "@test:coverage",
+      "@test:pest"
+    ],
+    "test:type": "pest --type-coverage",
+    "test:coverage": "pest --coverage",
+    "test:pest": "pest",
+    "test:lint": "phpstan"
+  },
   "require": {
     "php": "^8.4",
     "ext-pdo": "*",
     "brickhouse/core": "dev-main",
+    "brickhouse/log": "dev-main",
     "nesbot/carbon": "^3.8.2"
   },
   "require-dev": {
+    "brickhouse/testing": "dev-main",
     "pestphp/pest": "^3.7",
     "phpstan/phpstan": "^2.0",
-    "testcontainers/testcontainers": "^0.2.0"
+    "testcontainers/testcontainers": "^0.2.0",
+    "pestphp/pest-plugin-type-coverage": "^3.2"
   },
   "autoload": {
     "psr-4": {

@@ -4,6 +4,7 @@ namespace Brickhouse\Database\Schema;
 
 use Brickhouse\Database\DatabaseConnection;
 use Brickhouse\Database\Grammar;
+use Brickhouse\Database\Transposer\Model;
 
 class Blueprint
 {
@@ -483,6 +484,34 @@ class Blueprint
     public function primary(string|array $columns): void
     {
         $this->indexCommand('primary', array_wrap($columns));
+    }
+
+    /**
+     * Creates a new foreign key column which references the model `$model`.
+     *
+     * @template TModel of Model
+     *
+     * @param class-string<TModel>      $model      Name of the foreign model.
+     * @param null|string               $name       Name of the foreign key column.
+     * @param null|string               $table      Name of the referenced table.
+     * @param null|string               $key        Name of the referenced column primary key.
+     *
+     * @return Column
+     */
+    public function belongsTo(
+        string $model,
+        null|string $name = null,
+        null|string $table = null,
+        null|string $key = null
+    ): Column {
+        $naming = $model::naming();
+
+        return $this->bigInteger(
+            $name ?? $naming->foreignKey()
+        )->foreign(
+            $table ?? $naming->table(),
+            $key ?? $model::key()
+        );
     }
 
     /**

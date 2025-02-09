@@ -134,7 +134,7 @@ class QueryBuilder
      *
      * @return self
      */
-    public function where(string $column, $operatorOrValue, $value = null): self
+    public function where(string $column, mixed $operatorOrValue, mixed $value = null): self
     {
         if ($value === null) {
             $value = $operatorOrValue;
@@ -329,6 +329,10 @@ class QueryBuilder
      */
     public function update(array $values): bool
     {
+        if (empty($values)) {
+            return true;
+        }
+
         $query = $this->grammar->compileUpdate($this, $values);
         $result = $this->connection->statement($query, $this->bindings);
 
@@ -356,7 +360,7 @@ class QueryBuilder
     public function get(null|string|array $columns = null): Collection
     {
         if ($columns) {
-            $this->columns = $columns;
+            $this->columns = array_wrap($columns);
         }
 
         $query = $this->grammar->compileSelect($this);
@@ -366,27 +370,20 @@ class QueryBuilder
     }
 
     /**
-     * Executes the query and extract only the given column(s) from the result.
+     * Executes the query and extract only the given column from the result.
      *
-     * @param string|list<string>   $columns    Defines which columns to select. If not `null`, overwrites previously selected columns.
+     * @param string    $column     Defines which column to select.
      *
-     * @return Collection<($columns is string ? int : string),mixed>
+     * @return Collection<int,mixed>
      */
-    public function value(string|array ...$columns): Collection
+    public function value(string $column): Collection
     {
-        $this->columns = array_wrap(array_flatten($columns));
+        $this->columns = [$column];
 
         $query = $this->grammar->compileSelect($this);
         $results = $this->connection->select($query, $this->bindings);
 
-        $results = Collection::wrap($results);
-
-        if (count($this->columns) <= 1) {
-            /** @phpstan-ignore return.type */
-            return $results->flatten();
-        }
-
-        return $results;
+        return Collection::wrap($results)->flatten();
     }
 
     /**
@@ -440,7 +437,7 @@ class QueryBuilder
      *
      * @return array<string,mixed>|TValue
      */
-    public function firstOr(null|string|array|\Closure $columns = null, null|\Closure $fallback = null)
+    public function firstOr(null|string|array|\Closure $columns = null, null|\Closure $fallback = null): mixed
     {
         if ($columns instanceof \Closure) {
             $fallback = $columns;

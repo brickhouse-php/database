@@ -25,7 +25,6 @@ trait CompilesSchema
         'unique',
         'conflict',
         'default',
-        'foreign',
     ];
 
     /**
@@ -247,7 +246,17 @@ trait CompilesSchema
      */
     public function createBlueprintColumns(Blueprint $blueprint): string
     {
-        return join(", ", array_map([$this, "createTableColumn"], $blueprint->columns));
+        $foreignKeyColumns = array_filter($blueprint->columns, fn(Column $c) => $c instanceof ForeignKeyColumn);
+
+        $columnDefinitions = array_map([$this, "createTableColumn"], $blueprint->columns);
+        $foreignColumnDefinitions = array_map([$this, "compileTableColumnForeign"], $foreignKeyColumns);
+
+        $allColumnDefinitions = [
+            ...array_values($columnDefinitions),
+            ...array_values($foreignColumnDefinitions)
+        ];
+
+        return join(", ", $allColumnDefinitions);
     }
 
     /**
@@ -362,12 +371,8 @@ trait CompilesSchema
         return "DEFAULT {$default}";
     }
 
-    protected function compileTableColumnForeign(Column $column): string
+    protected function compileTableColumnForeign(ForeignKeyColumn $column): string
     {
-        if (!$column instanceof ForeignKeyColumn) {
-            return "";
-        }
-
         $references = $column->table;
         $key = $column->key;
 
@@ -376,7 +381,7 @@ trait CompilesSchema
         // Creating: `CREATE TABLE ... (user_id INT, FOREIGN KEY(user_id) REFERENCES users(id));`
         // Altering: `ALTER TABLE ... ADD COLUMN user_id INT REFERENCES users(id);`
         if ($column->blueprint->change === 'create') {
-            $sql = ", FOREIGN KEY({$column->name}) REFERENCES {$references}({$key})";
+            $sql = "FOREIGN KEY({$column->name}) REFERENCES {$references}({$key})";
         } else {
             $sql = "REFERENCES {$references}({$key})";
         }

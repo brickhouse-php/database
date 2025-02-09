@@ -37,7 +37,7 @@ trait CompilesConditions
             $builder->addBoundValues($value);
         }
 
-        return "WHERE " . join(", ", $clauses);
+        return "WHERE " . join(" AND ", $clauses);
     }
 
     /**
