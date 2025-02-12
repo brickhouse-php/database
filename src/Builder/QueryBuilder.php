@@ -509,11 +509,11 @@ class QueryBuilder
     /**
      * Adds a bound value to the query.
      *
-     * @param array<int|string,string|bool|int>|string|bool|int     $value
+     * @param array<int|string,string|bool|int>|string|bool|float|int       $value
      *
      * @return void
      */
-    public function addBoundValue(array|string|bool|int $value): void
+    public function addBoundValue(array|string|bool|float|int $value): void
     {
         if (!is_array($value)) {
             $this->bindings[] = $value;

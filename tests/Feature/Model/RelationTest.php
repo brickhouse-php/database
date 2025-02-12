@@ -6,6 +6,7 @@ use Brickhouse\Database\DatabaseConfig;
 use Brickhouse\Database\Schema\Blueprint;
 use Brickhouse\Database\Schema\Schema;
 use Brickhouse\Database\Sqlite\SqliteConnectionString;
+use Brickhouse\Database\Transposer\Exceptions\UnresolvableHasOneException;
 
 beforeEach(function () {
     $config = new DatabaseConfig([
@@ -40,11 +41,24 @@ beforeEach(function () {
         $table->belongsTo(Supplier::class);
         $table->text('account_number');
     });
+
+    $schema->create('cursed_suppliers', function (Blueprint $table) {
+        $table->id();
+        $table->text('name');
+    });
+
+    $schema->create('cursed_accounts', function (Blueprint $table) {
+        $table->id();
+        $table->belongsTo(CursedSupplier::class);
+        $table->text('account_number');
+    });
 });
 
 afterEach(function () {
     $schema = new Schema();
 
+    $schema->drop('cursed_accounts');
+    $schema->drop('cursed_suppliers');
     $schema->drop('accounts');
     $schema->drop('suppliers');
     $schema->drop('authors');
@@ -107,6 +121,87 @@ describe('Relations', function () {
         expect($authors[0]->name)->toBe('The Onion');
         expect($authors[0]->posts)->toHaveCount(1)->sequence(
             fn($post) => $post->title->toBe('Bowling Union Strikes')
+        );
+    });
+
+    it('deletes previous relation when destroying model with `destroyDependent = true` relation', function () {
+        $supplier = Supplier::create([
+            'name' => 'Example Ltd.',
+            'account' => Account::new(['account_number' => '01'])
+        ]);
+
+        expect($supplier->account->account_number)->toBe('01');
+
+        $supplier->account = Account::new(['account_number' => '02']);
+        $supplier->save();
+
+        expect(Account::all()->toArray())->toHaveCount(1)->sequence(
+            fn($account) => $account->account_number->toBe('02')
+        );
+    });
+
+    it('throws exception when destroying model with `destroyDependent = false` relation', function () {
+        $supplier = CursedSupplier::create([
+            'name' => 'Example Ltd.',
+            'account' => CursedAccount::new(['account_number' => '01'])
+        ]);
+
+        expect($supplier->account->account_number)->toBe('01');
+
+        $supplier->account = CursedAccount::new(['account_number' => '02']);
+        $supplier->save();
+
+        CursedSupplier::with('account')->find(1);
+    })->throws(UnresolvableHasOneException::class);
+})->group('database', 'model');
+
+describe('Model::load', function () {
+    it('skips loading relation given no load call', function () {
+        Author::create([
+            'name' => 'The Onion',
+            'posts' => [
+                Post::new(['title' => 'Bowling Union Strikes', 'body' => ''])
+            ]
+        ]);
+
+        $author = Author::find(1);
+
+        expect($author->name)->toBe('The Onion');
+        expect(isset($author->posts))->toBeFalse();
+    });
+
+    it('retrieves relation given has-many relation', function () {
+        Author::create([
+            'name' => 'The Onion',
+            'posts' => [
+                Post::new(['title' => 'Bowling Union Strikes', 'body' => ''])
+            ]
+        ]);
+
+        $author = Author::find(1)->load('posts');
+
+        expect($author->name)->toBe('The Onion');
+        expect($author->posts)->toHaveCount(1)->sequence(
+            fn($post) => $post->title->toBe('Bowling Union Strikes')
+        );
+    });
+
+    it('retrieves relation given nested relations', function () {
+        Author::create([
+            'name' => 'The Onion',
+            'posts' => [
+                Post::new(['title' => 'Bowling Union Strikes', 'body' => ''])
+            ]
+        ]);
+
+        $author = Author::find(1)->load('posts', 'posts.author');
+
+        expect($author->name)->toBe('The Onion');
+        expect($author->posts)->toHaveCount(1)->sequence(
+            function ($post) {
+                $post->title->toBe('Bowling Union Strikes');
+                $post->author->name->toBe('The Onion');
+            }
         );
     });
 })->group('database', 'model');

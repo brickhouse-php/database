@@ -155,6 +155,22 @@ class Author extends Model
     public array $posts = [];
 }
 
+class CursedSupplier extends Model
+{
+    public string $name;
+
+    #[HasOne(CursedAccount::class, destroyDependent: false)]
+    public CursedAccount $account;
+}
+
+class CursedAccount extends Model
+{
+    public string $account_number;
+
+    #[BelongsTo(CursedSupplier::class)]
+    public CursedSupplier $supplier;
+}
+
 class Supplier extends Model
 {
     public string $name;
