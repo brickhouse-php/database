@@ -16,6 +16,9 @@ abstract class Model implements \JsonSerializable
     /** @use Concerns\HasNamingStrategy<self> */
     use Concerns\HasNamingStrategy;
 
+    /** @use Concerns\NormalizesAttributes<self> */
+    use Concerns\NormalizesAttributes;
+
     /** @use Concerns\HasRelations<self> */
     use Concerns\HasRelations;
 

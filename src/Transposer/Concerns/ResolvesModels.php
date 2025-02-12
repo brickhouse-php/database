@@ -3,11 +3,8 @@
 namespace Brickhouse\Database\Transposer\Concerns;
 
 use Brickhouse\Database\Transposer\Exceptions;
-use Brickhouse\Database\Transposer\Exceptions\UnresolvableHasOneException;
 use Brickhouse\Database\Transposer\ModelQueryBuilder;
 use Brickhouse\Database\Transposer\Model;
-use Brickhouse\Database\Transposer\Relations\BelongsTo;
-use Brickhouse\Database\Transposer\Relations\HasMany;
 use Brickhouse\Database\Transposer\Relations\HasOne;
 use Brickhouse\Database\Transposer\Relations\Relation;
 use Brickhouse\Reflection\ReflectedProperty;
@@ -108,20 +105,16 @@ trait ResolvesModels
     {
         // Resolve an instance of the `Relation` attribute.
         $relation = $this->resolvePropertyRelationAttribute($property);
+        $relation->setProperty($property->name);
+        $relation->setParent($this->modelClass);
 
-        if ($relation instanceof HasOne) {
-            return $this->resolveSingleModelRelation($property, $relation, $rows);
-        }
+        /** @var ModelQueryBuilder<TModel> $builder */
+        $builder = new ModelQueryBuilder($relation->model, $this->connection);
+        $this->withSubRelations($builder, $property->name);
 
-        if ($relation instanceof HasMany) {
-            return $this->resolveMultipleModelRelation($property, $relation, $rows);
-        }
+        $relation->setQuery($builder);
 
-        if ($relation instanceof BelongsTo) {
-            return $this->resolveReferencingModelRelation($property, $relation, $rows);
-        }
-
-        throw new Exceptions\UnsupportedRelationException($this->modelClass, $property->name, $relation::class);
+        return $relation->match($rows);
     }
 
     /**
@@ -155,131 +148,6 @@ trait ResolvesModels
         }
 
         return $relationAttribute->create();
-    }
-
-    /**
-     * Resolve a `HasOne` relation on the given property.
-     *
-     * @param ReflectedProperty                     $property
-     * @param HasOne<TModel>                        $relation
-     * @param Collection<int,array<string,mixed>>   $rows
-     *
-     * @return Collection<int,array<string,mixed>>
-     */
-    protected function resolveSingleModelRelation(ReflectedProperty $property, HasOne $relation, Collection $rows): Collection
-    {
-        $builder = new ModelQueryBuilder($relation->model, $this->connection);
-        $this->withSubRelations($builder, $property->name);
-
-        $foreignColumn = $relation->foreignColumn ?? $this->modelClass::naming()->foreignKey();
-        $keyColumn = $relation->keyColumn ?? $relation->model::key();
-
-        $keys = [];
-        foreach ($rows as $row) {
-            $keys[] = $row[$keyColumn];
-        }
-
-        $models = $builder
-            ->whereIn($foreignColumn, $keys)
-            ->all()
-            ->groupBy($foreignColumn);
-
-        foreach ($rows->keys() as $idx) {
-            $row = $rows[$idx];
-
-            $modelId = $row[$keyColumn];
-            $modelsForRow = $models[$modelId] ?? [];
-
-            if (count($modelsForRow) !== 1) {
-                throw new UnresolvableHasOneException(
-                    $this->modelClass,
-                    $property->name,
-                    Collection::wrap($modelsForRow)
-                );
-            }
-
-            $row[$property->name] = $modelsForRow[0];
-
-            $rows[$idx] = $row;
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Resolve a `HasMany` relation on the given property.
-     *
-     * @param ReflectedProperty                     $property
-     * @param HasMany<TModel>                       $relation
-     * @param Collection<int,array<string,mixed>>   $rows
-     *
-     * @return Collection<int,array<string,mixed>>
-     */
-    protected function resolveMultipleModelRelation(ReflectedProperty $property, HasMany $relation, Collection $rows): Collection
-    {
-        $builder = new ModelQueryBuilder($relation->model, $this->connection);
-        $this->withSubRelations($builder, $property->name);
-
-        $foreignColumn = $relation->foreignColumn ?? $this->modelClass::naming()->foreignKey();
-        $keyColumn = $relation->keyColumn ?? $relation->model::key();
-
-        $keys = [];
-        foreach ($rows as $row) {
-            $keys[] = $row[$keyColumn];
-        }
-
-        $models = $builder
-            ->whereIn($foreignColumn, $keys)
-            ->all()
-            ->groupBy($foreignColumn);
-
-        foreach ($rows->keys() as $idx) {
-            $row = $rows[$idx];
-            $row[$property->name] = $models[$row[$keyColumn]];
-
-            $rows[$idx] = $row;
-        }
-
-        return $rows;
-    }
-
-    /**
-     * Resolve a `BelongsTo` relation on the given property.
-     *
-     * @param ReflectedProperty                     $property
-     * @param BelongsTo<TModel>                     $relation
-     * @param Collection<int,array<string,mixed>>   $rows
-     *
-     * @return Collection<int,array<string,mixed>>
-     */
-    protected function resolveReferencingModelRelation(ReflectedProperty $property, BelongsTo $relation, Collection $rows): Collection
-    {
-        $builder = new ModelQueryBuilder($relation->model, $this->connection);
-        $this->withSubRelations($builder, $property->name);
-
-        $keyColumn = $relation->keyColumn ?? $this->modelClass::key();
-
-        $keys = [];
-        foreach ($rows as $row) {
-            $keys[] = $row[$keyColumn];
-        }
-
-        $models = $builder
-            ->whereIn($keyColumn, $keys)
-            ->all()
-            ->groupBy($keyColumn);
-
-        foreach ($rows->keys() as $idx) {
-            $row = $rows[$idx];
-
-            $modelId = $row[$keyColumn];
-            $modelsForRow = $models[$modelId];
-
-            $row[$property->name] = $modelsForRow[0];
-            $rows[$idx] = $row;
-        }
-
-        return $rows;
     }
 
     /**

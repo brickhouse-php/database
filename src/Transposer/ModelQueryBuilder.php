@@ -8,7 +8,7 @@ use Brickhouse\Database\Transposer\Concerns;
 use Brickhouse\Database\Transposer\Model;
 use Brickhouse\Database\Transposer\Relations\BelongsTo;
 use Brickhouse\Database\Transposer\Relations\HasOne;
-use Brickhouse\Database\Transposer\Relations\HasRelation;
+use Brickhouse\Database\Transposer\Relations\HasOneOrMany;
 use Brickhouse\Support\Collection;
 
 /**
@@ -403,7 +403,7 @@ class ModelQueryBuilder
                 continue;
             }
 
-            if (!$relation instanceof HasRelation) {
+            if (!$relation instanceof HasOneOrMany) {
                 continue;
             }
 

@@ -8,9 +8,9 @@ use Brickhouse\Support\Collection;
 class UnresolvableHasOneException extends RelationException
 {
     /**
-     * @param string                    $model
-     * @param string                    $relation
-     * @param Collection<int,Model>     $records
+     * @param string                                $model
+     * @param string                                $relation
+     * @param Collection<int,array<string,mixed>>   $records
      */
     public function __construct(
         string $model,

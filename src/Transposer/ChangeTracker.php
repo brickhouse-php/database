@@ -26,6 +26,10 @@ class ChangeTracker
      */
     public function save(Model $model): Model
     {
+        // Normalize all the attributes on the model before saving it,
+        // to preserve integrity on the model.
+        $model->normalizeAllAttributes();
+
         $this->applyRelationReferences($model);
 
         $query = $model->query();

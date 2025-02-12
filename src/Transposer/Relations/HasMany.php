@@ -7,10 +7,10 @@ use Brickhouse\Database\Transposer\Model;
 /**
  * @template TModel of Model
  *
- * @extends HasRelation<TModel>
+ * @extends HasOneOrMany<TModel>
  */
 #[\Attribute(flags: \Attribute::TARGET_PROPERTY)]
-class HasMany extends HasRelation
+class HasMany extends HasOneOrMany
 {
     //
 }

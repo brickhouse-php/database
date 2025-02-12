@@ -3,6 +3,7 @@
 namespace Brickhouse\Database\Transposer\Relations;
 
 use Brickhouse\Database\Transposer\Model;
+use Brickhouse\Support\Collection;
 
 /**
  * @template TModel of Model
@@ -28,6 +29,36 @@ class BelongsTo extends Relation
     /**
      * @inheritdoc
      */
+    public function match(Collection $rows): Collection
+    {
+        $keyColumn = $this->parent::key();
+
+        $keys = [];
+        foreach ($rows as $row) {
+            $keys[] = $row[$keyColumn];
+        }
+
+        $models = $this->query
+            ->whereIn($keyColumn, $keys)
+            ->all()
+            ->groupBy($keyColumn);
+
+        foreach ($rows->keys() as $idx) {
+            $row = $rows[$idx];
+
+            $modelId = $row[$keyColumn];
+            $modelsForRow = $models[$modelId];
+
+            $row[$this->property] = $modelsForRow[0];
+            $rows[$idx] = $row;
+        }
+
+        return $rows;
+    }
+
+    /**
+     * @inheritdoc
+     */
     public function guessMatchingRelation(string|Model $model): string
     {
         if ($model instanceof Model) {
@@ -35,7 +66,7 @@ class BelongsTo extends Relation
         }
 
         foreach (new $this->model()->getModelRelations() as $property => $relation) {
-            if (!$relation instanceof HasRelation) {
+            if (!$relation instanceof HasOneOrMany) {
                 continue;
             }
 
@@ -46,6 +77,6 @@ class BelongsTo extends Relation
             return $property;
         }
 
-        throw new \RuntimeException("Failed to determine matching HasRelation relation on " . $model);
+        throw new \RuntimeException("Failed to determine matching HasOneOrMany relation on " . $model);
     }
 }
