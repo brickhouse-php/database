@@ -21,14 +21,21 @@ class ChangeTracker
      * @template TModel of Model
      *
      * @param TModel    $model
+     * @param bool      $validate       Whether to validate the model or not. Defaults to `true`.
      *
      * @return TModel
      */
-    public function save(Model $model): Model
+    public function save(Model $model, bool $validate = true): Model
     {
         // Normalize all the attributes on the model before saving it,
         // to preserve integrity on the model.
         $model->normalizeAllAttributes();
+
+        // Validate all the model attributes *after* normalizing the attributes.
+        // If the model isn't valid, don't attempt to save to database and just return.
+        if ($validate && !$model->validateAllAttributes()) {
+            return $model;
+        }
 
         $this->applyRelationReferences($model);
 

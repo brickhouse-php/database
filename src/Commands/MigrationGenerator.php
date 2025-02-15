@@ -2,6 +2,7 @@
 
 namespace Brickhouse\Database\Commands;
 
+use Brickhouse\Console\Attributes\Argument;
 use Brickhouse\Console\Attributes\Option;
 use Brickhouse\Console\GeneratorCommand;
 use Brickhouse\Console\InputOption;
@@ -9,13 +10,6 @@ use Brickhouse\Support\StringHelper;
 
 class MigrationGenerator extends GeneratorCommand
 {
-    /**
-     * The type of the class generated.
-     *
-     * @var string
-     */
-    public string $type = 'Migration';
-
     /**
      * The name of the console command.
      *
@@ -31,6 +25,14 @@ class MigrationGenerator extends GeneratorCommand
     public string $description = 'Scaffolds a new database migration.';
 
     /**
+     * Defines the name of the generated migration.
+     *
+     * @var string
+     */
+    #[Argument("name", "Specifies the name of the migration", InputOption::REQUIRED)]
+    public string $migrationName = '';
+
+    /**
      * Defines the name of the model for the migration.
      *
      * @var null|string
@@ -38,18 +40,42 @@ class MigrationGenerator extends GeneratorCommand
     #[Option("model", null, "Defines the name of the model for the migration.", InputOption::REQUIRED)]
     public null|string $model = null;
 
-    public function stub(): string
+    /**
+     * @inheritDoc
+     */
+    protected function sourceRoot(): string
     {
-        if ($this->model !== null) {
-            return __DIR__ . '/../Stubs/Migration.stub.php';
-        }
-
-        return __DIR__ . '/../Stubs/Migration.base.stub.php';
+        return __DIR__ . '/../Stubs/';
     }
 
-    protected function getPath(string $name): string
+    /**
+     * @inheritDoc
+     */
+    public function handle(): int
     {
-        $filename = pathinfo($name, PATHINFO_FILENAME);
+        $stub = $this->model !== null
+            ? 'Migration.stub.php'
+            : 'Migration.base.stub.php';
+
+        $this->copy(
+            $stub,
+            $this->getPath(),
+            [
+                'tableName' => StringHelper::from($this->model)->pluralize()->lower(),
+            ]
+        );
+
+        return 0;
+    }
+
+    /**
+     * Defines the path of where to place the migration.
+     *
+     * @return void
+     */
+    protected function getPath(): string
+    {
+        $filename = pathinfo($this->migrationName, PATHINFO_FILENAME);
         $timestampPrefix = \Carbon\Carbon::now()->format('Ymd_His');
 
         if ($this->model === null) {
@@ -63,31 +89,6 @@ class MigrationGenerator extends GeneratorCommand
             $name = "{$timestampPrefix}_add_{$modelName}_table";
         }
 
-        return migrations_path($name . '.php');
-    }
-
-    protected function defaultNamespace(string $rootNamespace): string
-    {
-        return $rootNamespace . 'Migrations';
-    }
-
-    /**
-     * Builds the content of the stub.
-     *
-     * @return string
-     */
-    protected function buildStub(string $path, string $name): string
-    {
-        $content = parent::buildStub($path, $name);
-
-        if ($this->model === null) {
-            return $content;
-        }
-
-        return str_replace(
-            ['TableName'],
-            [StringHelper::from($this->model)->pluralize()->lower()],
-            $content
-        );
+        return path('resources', 'migrations', $name . '.php');
     }
 }

@@ -16,11 +16,14 @@ abstract class Model implements \JsonSerializable
     /** @use Concerns\HasNamingStrategy<self> */
     use Concerns\HasNamingStrategy;
 
+    /** @use Concerns\HasRelations<self> */
+    use Concerns\HasRelations;
+
     /** @use Concerns\NormalizesAttributes<self> */
     use Concerns\NormalizesAttributes;
 
-    /** @use Concerns\HasRelations<self> */
-    use Concerns\HasRelations;
+    /** @use Concerns\ValidatesAttributes<self> */
+    use Concerns\ValidatesAttributes;
 
     public const int STATE_NEW = 0;
     public const int STATE_PERSISTING = 1;
@@ -57,14 +60,15 @@ abstract class Model implements \JsonSerializable
      * Optionally, fills the given properties into the model.
      *
      * @param array<string,mixed>   $properties     Optional properties to fill into the model on creation.
+     * @param bool                  $validate       Whether to validate the model or not. Defaults to `true`.
      *
      * @return static
      */
-    public static function new(array $properties = []): static
+    public static function new(array $properties = [], bool $validate = true): static
     {
         /** @var static $model */
         $model = resolve(ModelBuilder::class)
-            ->create(static::class, $properties);
+            ->create(static::class, $properties, $validate);
 
         return $model;
     }
@@ -74,12 +78,13 @@ abstract class Model implements \JsonSerializable
      * Optionally, fills the given properties into the model.
      *
      * @param array<string,mixed>   $properties     Optional properties to fill into the model on creation.
+     * @param bool                  $validate       Whether to validate the model or not. Defaults to `true`.
      *
      * @return static
      */
-    public static function create(array $properties = []): static
+    public static function create(array $properties = [], bool $validate = true): static
     {
-        return static::new($properties)->save();
+        return static::new($properties)->save($validate);
     }
 
     /**
@@ -95,9 +100,11 @@ abstract class Model implements \JsonSerializable
     /**
      * Saves the model to the database and returns the model with it's updated database values.
      *
+     * @param bool      $validate   Whether to validate the model or not. Defaults to `true`.
+     *
      * @return static
      */
-    public function save(): static
+    public function save(bool $validate = true): static
     {
         // If the model hasn't been altered since it was retrieved from the database,
         // we'll cut the method short and return straight away.
@@ -105,7 +112,7 @@ abstract class Model implements \JsonSerializable
             return $this;
         }
 
-        return new ChangeTracker()->save($this);
+        return new ChangeTracker()->save($this, $validate);
     }
 
     /**

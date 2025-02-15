@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(Schema $schema): void
     {
-        $schema->create('TableName', function(Blueprint $table) {
+        $schema->create('{{ tableName }}', function (Blueprint $table) {
             $table->id();
 
             // Add further columns here...
@@ -23,6 +23,6 @@ return new class extends Migration
      */
     public function down(Schema $schema): void
     {
-        $schema->drop('TableName');
+        $schema->drop('{{ tableName }}');
     }
 };

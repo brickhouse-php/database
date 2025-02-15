@@ -24,6 +24,9 @@
       "homepage": "https://maxtrier.dk"
     }
   ],
+  "suggest": {
+    "brickhouse/validation": "Required for model validation."
+  },
   "scripts": {
     "test": [
       "@test:type",
@@ -44,6 +47,7 @@
   },
   "require-dev": {
     "brickhouse/testing": "dev-main",
+    "brickhouse/validation": "dev-main",
     "pestphp/pest": "^3.7",
     "phpstan/phpstan": "^2.0",
     "testcontainers/testcontainers": "^0.2.0",

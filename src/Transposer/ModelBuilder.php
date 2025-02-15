@@ -31,10 +31,11 @@ class ModelBuilder
      *
      * @param class-string<TModel>  $model          Name of the model to create an instance of.
      * @param array<string,mixed>   $attributes     Properties to fill into the model on creation.
+     * @param bool                  $validate       Whether to validate the model after creation. Defaults to `true`.
      *
      * @return TModel
      */
-    public function create(string $model, array $attributes): Model
+    public function create(string $model, array $attributes, bool $validate = true): Model
     {
         try {
             $reflector = new ReflectedType($model);
@@ -50,6 +51,13 @@ class ModelBuilder
 
         $this->loadModelAttributes($instance, $attributes);
         $this->loadRelatedAttributes($reflector, $instance, $attributes);
+
+        $instance->normalizeAllAttributes();
+
+        // Validate all the model attributes *after* normalizing the attributes.
+        if ($validate) {
+            $instance->validateAllAttributes();
+        }
 
         return $instance;
     }
